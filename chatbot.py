@@ -13,7 +13,7 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers import LSTM
 from keras.layers import Dense
-from additional_scripts import user_info
+from additional_scripts import user_info, feedback
 
 NER_NLP = spacy.load('en')
 
@@ -753,6 +753,7 @@ class ChatBot:
         try:
             terminals = self.get_question_terminals()
             user_info.askQuestions()
+            last_question = ""
             while True:
                 sys.stdout.write(">")
                 sys.stdout.flush()
@@ -761,6 +762,12 @@ class ChatBot:
                 if input_str == '!EXIT':
                     print("Done Chatting...\n")
                     return True
+                if feedback.incorrectAnswer(input_str):
+                    feedback.saveQuestionAnswerPairs(last_question, input_str)
+                    print("Thanks. I'll remember that for next time")
+                    print(" ")
+                    continue
+                last_question = input_str
                 answer = user_info.getAnswer(input_str)
                 if answer:
                     print(answer)
