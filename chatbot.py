@@ -13,6 +13,7 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers import LSTM
 from keras.layers import Dense
+from additional_scripts import user_info
 
 NER_NLP = spacy.load('en')
 
@@ -96,7 +97,7 @@ class ChatBot:
             new_instance.encoder.load_weights(f'{model_dir}/encoder.h5')
             new_instance.decoder.load_weights(f'{model_dir}/decoder.h5')
             new_instance.ignore_cache = options.ignore_cache
-            new_instance._cache_dir = 'cache'
+            new_instance._cache_dir = 'saved_models/Test7/cache'
             return new_instance
         else:
             print(f"model: {model_dir} cannot be loaded.")
@@ -445,6 +446,11 @@ class ChatBot:
 
         print(">> Vocab Encoding Training Data <<")
         for i, (q, a) in enumerate(training_data_pairs):
+            if not nltk.sent_tokenize(q) or not nltk.sent_tokenize(a):
+                print("\n")
+                print(i)
+                print(nltk.sent_tokenize(q))
+                print(nltk.sent_tokenize(a))
             q, a = nltk.sent_tokenize(q)[0], nltk.sent_tokenize(a)[0],
             if is_valid_data(q, a):
                 q_vec = self.v_encode(q, self.n_in, q_terminals)
@@ -743,9 +749,10 @@ class ChatBot:
         """
         if not self:
             raise RuntimeError("Attempted to chat with an untrained model.")
-        print("Chat-bot ready, type anything to start: (Ctrl + C or type '!EXIT' to stop chatting)")
+        print("Chat-bot ready: (Ctrl + C or type '!EXIT' to stop chatting)")
         try:
             terminals = self.get_question_terminals()
+            user_info.askQuestions()
             while True:
                 sys.stdout.write(">")
                 sys.stdout.flush()
@@ -754,12 +761,16 @@ class ChatBot:
                 if input_str == '!EXIT':
                     print("Done Chatting...\n")
                     return True
-
-                vocab_encoded_X_in = [self.v_encode(input_str, self.n_in, terminals)]
-                X_in = self._one_hot_encode(vocab_encoded_X_in)
-                Y_hat = self._predict(X_in)
-                print(f"Response: {self._vector_to_sentence(Y_hat)}")
-                print(" ")
+                answer = user_info.getAnswer(input_str)
+                if answer:
+                    print(answer)
+                    print(" ")
+                else:
+                    vocab_encoded_X_in = [self.v_encode(input_str, self.n_in, terminals)]
+                    X_in = self._one_hot_encode(vocab_encoded_X_in)
+                    Y_hat = self._predict(X_in)
+                    print(f"Response: {self._vector_to_sentence(Y_hat)}")
+                    print(" ")
         except KeyboardInterrupt:
             print("\nDone Chatting...\n")
             return True
